@@ -1,0 +1,13 @@
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <EditTextPreference
+        android:defaultValue="0"
+        android:key="refreshTimeKey"
+        android:title="Enter refresh interval in seconds (0 to disable)"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:maxLines="1"
+        app:useSimpleSummaryProvider="true"/>
+
+</PreferenceScreen>

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ThirdFragment">
+
+    <TextView
+        android:id="@+id/textview_third"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/enter_url_and_nickname"
+        app:layout_constraintBottom_toTopOf="@id/editttext_third_url"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/editttext_third_url"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:autofillHints="http://"
+        android:hint="@string/enter_url"
+        android:inputType="textUri|textMultiLine"
+        app:layout_constraintBottom_toTopOf="@id/editttext_third_nickname"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/textview_third" />
+
+    <EditText
+        android:id="@+id/editttext_third_nickname"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:autofillHints="http://"
+        android:hint="@string/enter_nickname"
+        android:inputType="textUri|textMultiLine"
+        app:layout_constraintBottom_toTopOf="@id/image_capture_test"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/editttext_third_url" />
+
+    <ImageView
+        android:id="@+id/image_capture_test"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/imagecapture"
+        app:layout_constraintTop_toBottomOf="@id/editttext_third_nickname"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/button_third_save" />
+
+    <Button
+        android:id="@+id/button_third_test"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/test"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@id/button_third_save"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/image_capture_test" />
+
+    <Button
+        android:id="@+id/button_third_save"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/save"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@id/button_third_test"
+        app:layout_constraintTop_toBottomOf="@id/image_capture_test" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
