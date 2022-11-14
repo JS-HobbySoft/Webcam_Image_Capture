@@ -17,6 +17,9 @@
         <action
             android:id="@+id/action_FirstFragment_to_ThirdFragment"
             app:destination="@id/ThirdFragment" />
+        <action
+            android:id="@+id/action_FirstFragment_to_FullScreenFragment"
+            app:destination="@id/FullScreenFragment" />
     </fragment>
     <fragment
         android:id="@+id/SecondFragment"
@@ -39,6 +42,16 @@
 
         <action
             android:id="@+id/action_ThirdFragment_to_FirstFragment"
+            app:destination="@id/FirstFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/FullScreenFragment"
+        android:name="org.jshobbysoft.webcamimagecapture.FullScreenFragment"
+        android:label="@string/fullscreenfragmentname"
+        tools:layout="@layout/fragment_full_screen">
+
+        <action
+            android:id="@+id/action_FullScreenFragment_to_FirstFragment"
             app:destination="@id/FirstFragment" />
     </fragment>
 </navigation>

@@ -58,6 +58,11 @@ class CustomAdapter(
         viewHolder.textView.text = imageViewModel.nickNameFromPrefs
         bindImage(viewHolder.imageCapture, imageViewModel.urlFromPrefs)
 
+        viewHolder.imageCapture.setOnClickListener { v ->
+            val bundle = bundleOf("url" to imageViewModel.urlFromPrefs)
+            v.findNavController().navigate(R.id.action_FirstFragment_to_FullScreenFragment, bundle)
+        }
+
         viewHolder.itemView.setOnClickListener { v ->
             val bundle = bundleOf("urlNickName" to imageViewModel.nickNameFromPrefs)
             v.findNavController().navigate(R.id.action_FirstFragment_to_ThirdFragment, bundle)
