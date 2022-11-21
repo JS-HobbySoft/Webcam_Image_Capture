@@ -1,5 +1,6 @@
 package org.jshobbysoft.webcamimagecapture
 
+//import coil.intercept.Interceptor
 import android.content.Context
 import android.content.SharedPreferences
 import android.view.LayoutInflater
@@ -11,11 +12,22 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.os.bundleOf
 import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
+import coil.ImageLoader
 import coil.imageLoader
 import coil.request.CachePolicy
+import coil.request.ErrorResult
 import coil.request.ImageRequest
+import com.burgstaller.okhttp.AuthenticationCacheInterceptor
+import com.burgstaller.okhttp.CachingAuthenticatorDecorator
+import com.burgstaller.okhttp.DispatchingAuthenticator
+import com.burgstaller.okhttp.basic.BasicAuthenticator
+import com.burgstaller.okhttp.digest.CachingAuthenticator
+import com.burgstaller.okhttp.digest.DigestAuthenticator
+import com.burgstaller.okhttp.digest.Credentials as digestCredentials
 import com.google.android.material.snackbar.Snackbar
 import okhttp3.Credentials
+import okhttp3.OkHttpClient
+import java.util.concurrent.ConcurrentHashMap
 
 data class ImageViewModel(val nickNameFromPrefs: String, val urlFromPrefs: String)
 
@@ -109,15 +121,17 @@ fun bindImage(imgView: ImageView, imgUrl: CharSequence) {
             .destructured
         val credentials: String = Credentials.basic(camUsername, camPassword)
         imgUrl.let {
-            val imageLoader = imgView.context.imageLoader
+            val imageLoader = ImageLoader.Builder(imgView.context)
+                .okHttpClient {
+                    buildHttpClient(camUsername,camPassword)
+                }
+                .build()
             val request = ImageRequest.Builder(imgView.context)
                 .data(imgUrl)
                 .setHeader("Authorization", credentials)
                 .target(imgView)
                 .placeholder(R.drawable.loading_animation)
                 .error(R.drawable.ic_broken_image)
-//                .networkCachePolicy(CachePolicy.DISABLED)
-//                .diskCachePolicy(CachePolicy.DISABLED)
                 .memoryCachePolicy(CachePolicy.DISABLED)
                 .build()
             imageLoader.enqueue(request)
@@ -130,14 +144,30 @@ fun bindImage(imgView: ImageView, imgUrl: CharSequence) {
                 .target(imgView)
                 .placeholder(R.drawable.loading_animation)
                 .error(R.drawable.ic_broken_image)
-//                .networkCachePolicy(CachePolicy.DISABLED)
-//                .diskCachePolicy(CachePolicy.DISABLED)
                 .memoryCachePolicy(CachePolicy.DISABLED)
                 .build()
             imageLoader.enqueue(request)
         }
     }
 }
+
+private fun buildHttpClient(username: String, password: String): OkHttpClient {
+    // Library used for digest authenticaton: https://github.com/rburgst/okhttp-digest
+    val digestAuthenticator = DigestAuthenticator(digestCredentials(username, password))
+    val basicAuthenticator = BasicAuthenticator(digestCredentials(username, password))
+    val authenticator = DispatchingAuthenticator.Builder()
+        .with("digest", digestAuthenticator)
+        .with("basic", basicAuthenticator)
+        .build()
+    val authCache: ConcurrentHashMap<String, CachingAuthenticator> =
+        ConcurrentHashMap<String, CachingAuthenticator>()
+    val decorator = CachingAuthenticatorDecorator(authenticator, authCache)
+    return OkHttpClient.Builder()
+        .authenticator(decorator)
+        .addInterceptor(AuthenticationCacheInterceptor(authCache))
+        .build()
+}
+
 
 fun bindImagetest(imgView: ImageView, imgUrl: CharSequence, view: View) {
     if (Regex("""https?://(.*?):(.*?)@.*""").containsMatchIn(imgUrl)) {
@@ -146,18 +176,20 @@ fun bindImagetest(imgView: ImageView, imgUrl: CharSequence, view: View) {
             .destructured
         val credentials: String = Credentials.basic(camUsername, camPassword)
         imgUrl.let {
-            val imageLoader = imgView.context.imageLoader
+            val imageLoader = ImageLoader.Builder(imgView.context)
+                .okHttpClient {
+                    buildHttpClient(camUsername,camPassword)
+                }
+                .build()
             val request = ImageRequest.Builder(imgView.context)
                 .data(imgUrl)
                 .setHeader("Authorization", credentials)
                 .target(imgView)
                 .placeholder(R.drawable.loading_animation)
                 .error(R.drawable.ic_broken_image)
-//                .networkCachePolicy(CachePolicy.DISABLED)
-//                .diskCachePolicy(CachePolicy.DISABLED)
                 .memoryCachePolicy(CachePolicy.DISABLED)
                 .listener(onSuccess = {_, _ -> Snackbar.make(view,"Test Successful",Snackbar.LENGTH_LONG).show() },
-                    onError = {_, throwable: Throwable -> Snackbar.make(view,"Error: ${throwable.message}",Snackbar.LENGTH_LONG).show() }
+                    onError = {_, throwable: ErrorResult-> Snackbar.make(view,"Error: ${throwable.throwable}",Snackbar.LENGTH_LONG).show() }
                 )
                 .build()
             imageLoader.enqueue(request)
@@ -174,7 +206,7 @@ fun bindImagetest(imgView: ImageView, imgUrl: CharSequence, view: View) {
 //                .diskCachePolicy(CachePolicy.DISABLED)
                 .memoryCachePolicy(CachePolicy.DISABLED)
                 .listener(onSuccess = {_, _ -> Snackbar.make(view,"Test Successful",Snackbar.LENGTH_LONG).show() },
-                    onError = {_, throwable: Throwable -> Snackbar.make(view,"Error: ${throwable.message}",Snackbar.LENGTH_LONG).show() }
+                    onError = {_, throwable: ErrorResult -> Snackbar.make(view,"Error: ${throwable.throwable}",Snackbar.LENGTH_LONG).show() }
                 )
                 .build()
             imageLoader.enqueue(request)

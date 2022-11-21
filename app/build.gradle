@@ -41,7 +41,8 @@ dependencies {
     implementation 'androidx.navigation:navigation-fragment-ktx:2.5.3'
     implementation 'androidx.navigation:navigation-ui-ktx:2.5.3'
     implementation 'androidx.preference:preference-ktx:1.2.0'
-    implementation "io.coil-kt:coil:1.1.1"
+    implementation "io.coil-kt:coil:2.2.2"
+    implementation "io.github.rburgst:okhttp-digest:2.7"
     implementation "androidx.cardview:cardview:1.0.0"
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.7.0'
