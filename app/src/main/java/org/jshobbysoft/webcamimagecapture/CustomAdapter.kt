@@ -1,6 +1,5 @@
 package org.jshobbysoft.webcamimagecapture
 
-//import coil.intercept.Interceptor
 import android.content.Context
 import android.content.SharedPreferences
 import android.view.LayoutInflater
@@ -17,6 +16,7 @@ import coil.imageLoader
 import coil.request.CachePolicy
 import coil.request.ErrorResult
 import coil.request.ImageRequest
+import coil.result
 import com.burgstaller.okhttp.AuthenticationCacheInterceptor
 import com.burgstaller.okhttp.CachingAuthenticatorDecorator
 import com.burgstaller.okhttp.DispatchingAuthenticator
@@ -68,7 +68,7 @@ class CustomAdapter(
         // contents of the view with that element
         val imageViewModel = dataSet[position]
         viewHolder.textView.text = imageViewModel.nickNameFromPrefs
-        bindImage(viewHolder.imageCapture, imageViewModel.urlFromPrefs)
+        bindImage(viewHolder.imageCapture, imageViewModel.urlFromPrefs, position)
 
         viewHolder.imageCapture.setOnClickListener { v ->
             val bundle = bundleOf("url" to imageViewModel.urlFromPrefs)
@@ -130,7 +130,7 @@ class CustomAdapter(
 //    }
 }
 
-fun bindImage(imgView: ImageView, imgUrl: CharSequence) {
+fun bindImage(imgView: ImageView, imgUrl: CharSequence, imgPos: Int) {
     if (Regex("""https?://(.*?):(.*?)@.*""").containsMatchIn(imgUrl)) {
         val (camUsername, camPassword) = Regex("""https?://(.*?):(.*?)@.*""")
             .find(imgUrl)!!
@@ -149,10 +149,11 @@ fun bindImage(imgView: ImageView, imgUrl: CharSequence) {
                 .placeholder(R.drawable.loading_animation)
                 .error(R.drawable.ic_broken_image)
                 .memoryCachePolicy(CachePolicy.DISABLED)
-                .diskCacheKey(imgUrl.toString())
+                .diskCacheKey(imgPos.toString())
                 .build()
             imageLoader.enqueue(request)
 //            imageLoader.diskCache?.get(imgUrl.toString())
+            println("1 " + request.diskCacheKey)
         }
     } else {
         imgUrl.let {
@@ -165,6 +166,7 @@ fun bindImage(imgView: ImageView, imgUrl: CharSequence) {
                 .memoryCachePolicy(CachePolicy.DISABLED)
                 .build()
             imageLoader.enqueue(request)
+            println("2 " + imgView.result?.request?.diskCacheKey)
         }
     }
 }
