@@ -37,4 +37,7 @@
     <string name="attachment_summary_off">Only download attachments when manually requested</string>
     <string name="hello_blank_fragment">Full Screen</string>
     <string name="fullscreenfragmentname">Full Screen</string>
+    <string name="share">SHARE</string>
+    <string name="save_menu">SAVE</string>
+    <string name="download_menu">DOWNLOAD</string>
 </resources>

@@ -75,6 +75,22 @@ class CustomAdapter(
             v.findNavController().navigate(R.id.action_FirstFragment_to_FullScreenFragment, bundle)
         }
 
+        viewHolder.imageCapture.setOnLongClickListener {
+            val builder = AlertDialog.Builder(icContext)
+            builder.setMessage("Download image?")
+                .setCancelable(false)
+                .setPositiveButton("Yes") { _, _ ->
+                    Snackbar.make(it,"To be implemented later",Snackbar.LENGTH_LONG).show()                }
+                .setNegativeButton("No") { dialog, _ ->
+                    // Dismiss the dialog
+                    dialog.dismiss()
+                }
+            val alert = builder.create()
+            alert.show()
+            true
+        }
+
+
         viewHolder.itemView.setOnClickListener { v ->
             val bundle = bundleOf("urlNickName" to imageViewModel.nickNameFromPrefs)
             v.findNavController().navigate(R.id.action_FirstFragment_to_ThirdFragment, bundle)
@@ -133,8 +149,10 @@ fun bindImage(imgView: ImageView, imgUrl: CharSequence) {
                 .placeholder(R.drawable.loading_animation)
                 .error(R.drawable.ic_broken_image)
                 .memoryCachePolicy(CachePolicy.DISABLED)
+                .diskCacheKey(imgUrl.toString())
                 .build()
             imageLoader.enqueue(request)
+//            imageLoader.diskCache?.get(imgUrl.toString())
         }
     } else {
         imgUrl.let {
@@ -152,7 +170,7 @@ fun bindImage(imgView: ImageView, imgUrl: CharSequence) {
 }
 
 private fun buildHttpClient(username: String, password: String): OkHttpClient {
-    // Library used for digest authenticaton: https://github.com/rburgst/okhttp-digest
+    // Library used for digest authentication: https://github.com/rburgst/okhttp-digest
     val digestAuthenticator = DigestAuthenticator(digestCredentials(username, password))
     val basicAuthenticator = BasicAuthenticator(digestCredentials(username, password))
     val authenticator = DispatchingAuthenticator.Builder()

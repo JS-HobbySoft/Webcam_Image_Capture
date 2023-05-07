@@ -120,6 +120,7 @@ class FirstFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        mainHandler.removeCallbacksAndMessages(null)
         _binding = null
     }
 }
