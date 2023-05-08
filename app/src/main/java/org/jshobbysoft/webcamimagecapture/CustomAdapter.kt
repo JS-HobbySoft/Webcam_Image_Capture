@@ -2,12 +2,18 @@ package org.jshobbysoft.webcamimagecapture
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
+import android.os.Environment
+import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.core.graphics.drawable.toBitmap
 import androidx.core.os.bundleOf
 import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
@@ -16,7 +22,6 @@ import coil.imageLoader
 import coil.request.CachePolicy
 import coil.request.ErrorResult
 import coil.request.ImageRequest
-import coil.result
 import com.burgstaller.okhttp.AuthenticationCacheInterceptor
 import com.burgstaller.okhttp.CachingAuthenticatorDecorator
 import com.burgstaller.okhttp.DispatchingAuthenticator
@@ -27,6 +32,12 @@ import com.burgstaller.okhttp.digest.Credentials as digestCredentials
 import com.google.android.material.snackbar.Snackbar
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
+import java.io.File
+import java.io.FileNotFoundException
+import java.io.FileOutputStream
+import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.concurrent.ConcurrentHashMap
 
 data class ImageViewModel(val nickNameFromPrefs: String, val urlFromPrefs: String)
@@ -68,7 +79,7 @@ class CustomAdapter(
         // contents of the view with that element
         val imageViewModel = dataSet[position]
         viewHolder.textView.text = imageViewModel.nickNameFromPrefs
-        bindImage(viewHolder.imageCapture, imageViewModel.urlFromPrefs, position)
+        bindImage(viewHolder.imageCapture, imageViewModel.urlFromPrefs)
 
         viewHolder.imageCapture.setOnClickListener { v ->
             val bundle = bundleOf("url" to imageViewModel.urlFromPrefs)
@@ -77,10 +88,15 @@ class CustomAdapter(
 
         viewHolder.imageCapture.setOnLongClickListener {
             val builder = AlertDialog.Builder(icContext)
-            builder.setMessage("Download image?")
+            builder.setMessage("Save image?")
                 .setCancelable(false)
                 .setPositiveButton("Yes") { _, _ ->
-                    Snackbar.make(it,"To be implemented later",Snackbar.LENGTH_LONG).show()                }
+//                    val imageBitmap = viewHolder.imageCapture.drawable.toBitmap()
+//                    MediaStore.Images.Media.insertImage(icContext.contentResolver, imageBitmap,
+//                        "Image title $position", null)
+                    saveImage(viewHolder.imageCapture.drawable)
+//                    Snackbar.make(it,"To be implemented later",Snackbar.LENGTH_LONG).show()
+                }
                 .setNegativeButton("No") { dialog, _ ->
                     // Dismiss the dialog
                     dialog.dismiss()
@@ -130,7 +146,7 @@ class CustomAdapter(
 //    }
 }
 
-fun bindImage(imgView: ImageView, imgUrl: CharSequence, imgPos: Int) {
+fun bindImage(imgView: ImageView, imgUrl: CharSequence) {
     if (Regex("""https?://(.*?):(.*?)@.*""").containsMatchIn(imgUrl)) {
         val (camUsername, camPassword) = Regex("""https?://(.*?):(.*?)@.*""")
             .find(imgUrl)!!
@@ -149,11 +165,11 @@ fun bindImage(imgView: ImageView, imgUrl: CharSequence, imgPos: Int) {
                 .placeholder(R.drawable.loading_animation)
                 .error(R.drawable.ic_broken_image)
                 .memoryCachePolicy(CachePolicy.DISABLED)
-                .diskCacheKey(imgPos.toString())
+//                .diskCacheKey(imgPos.toString())
                 .build()
             imageLoader.enqueue(request)
 //            imageLoader.diskCache?.get(imgUrl.toString())
-            println("1 " + request.diskCacheKey)
+//            println("1 " + request.diskCacheKey)
         }
     } else {
         imgUrl.let {
@@ -166,7 +182,7 @@ fun bindImage(imgView: ImageView, imgUrl: CharSequence, imgPos: Int) {
                 .memoryCachePolicy(CachePolicy.DISABLED)
                 .build()
             imageLoader.enqueue(request)
-            println("2 " + imgView.result?.request?.diskCacheKey)
+//            println("2 " + imgView.result?.request?.diskCacheKey)
         }
     }
 }
@@ -232,4 +248,43 @@ fun bindImagetest(imgView: ImageView, imgUrl: CharSequence, view: View) {
             imageLoader.enqueue(request)
         }
     }
+}
+
+//  https://stackoverflow.com/questions/71308298/how-to-save-image-from-imageview-to-gallery
+//private fun getDisc(): File {
+//    val file = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+//    return File(file, "YOUR_ALBUM_NAME")
+//}
+
+private fun saveImage(drawable: Drawable) {
+//    val file = getDisc()
+    val file = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+
+    if (!file.exists() && !file.mkdirs()) {
+        file.mkdir()
+    }
+
+    val simpleDateFormat = SimpleDateFormat("yyyymmsshhmmss")
+    val date = simpleDateFormat.format(Date())
+    val name = "IMG_$date.jpg"
+    val fileName = file.absolutePath + "/" + name
+    val newFile = File(fileName)
+
+    try {
+        val draw = drawable as BitmapDrawable
+        val bitmap = draw.bitmap
+        val fileOutPutStream = FileOutputStream(newFile)
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutPutStream)
+//        Snackbar.make(it,"File saved successfully",Snackbar.LENGTH_LONG).show()
+        println("File saved successfully")
+//        savedFile = newFile
+        fileOutPutStream.flush()
+        fileOutPutStream.close()
+
+    } catch (e: FileNotFoundException) {
+        e.printStackTrace()
+    } catch (e: IOException) {
+        e.printStackTrace()
+    }
+
 }

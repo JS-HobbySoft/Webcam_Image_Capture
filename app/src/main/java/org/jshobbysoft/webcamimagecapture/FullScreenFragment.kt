@@ -41,7 +41,7 @@ class FullScreenFragment : Fragment() {
         if (param1 != null) {
 //          pass bogus value for imgPos when starting full screen mode, downloading is not
 //          available from this screen
-            bindImage(binding.fullscreenImagecapture, param1.toString(), 999)
+            bindImage(binding.fullscreenImagecapture, param1.toString())
         }
 
         binding.fullscreenImagecapture.setOnClickListener {
