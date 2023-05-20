@@ -70,7 +70,6 @@ class FirstFragment : Fragment() {
                 }
             }
         }, viewLifecycleOwner)
-
         return binding.root
     }
 

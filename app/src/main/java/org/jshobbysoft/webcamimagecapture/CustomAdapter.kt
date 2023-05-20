@@ -1,10 +1,13 @@
 package org.jshobbysoft.webcamimagecapture
 
+import android.content.ContentValues
 import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.view.LayoutInflater
@@ -36,8 +39,10 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Objects
 import java.util.concurrent.ConcurrentHashMap
 
 data class ImageViewModel(val nickNameFromPrefs: String, val urlFromPrefs: String)
@@ -91,11 +96,10 @@ class CustomAdapter(
             builder.setMessage("Save image?")
                 .setCancelable(false)
                 .setPositiveButton("Yes") { _, _ ->
-//                    val imageBitmap = viewHolder.imageCapture.drawable.toBitmap()
-//                    MediaStore.Images.Media.insertImage(icContext.contentResolver, imageBitmap,
-//                        "Image title $position", null)
+                    val imageBMP = viewHolder.imageCapture.drawable.toBitmap()
+//                    saveImageToGallery(imageBMP,icContext)
+//                    imageBMP.saveImage(icContext)
                     saveImage(viewHolder.imageCapture.drawable)
-//                    Snackbar.make(it,"To be implemented later",Snackbar.LENGTH_LONG).show()
                 }
                 .setNegativeButton("No") { dialog, _ ->
                     // Dismiss the dialog
@@ -105,7 +109,6 @@ class CustomAdapter(
             alert.show()
             true
         }
-
 
         viewHolder.itemView.setOnClickListener { v ->
             val bundle = bundleOf("urlNickName" to imageViewModel.nickNameFromPrefs)
@@ -165,11 +168,8 @@ fun bindImage(imgView: ImageView, imgUrl: CharSequence) {
                 .placeholder(R.drawable.loading_animation)
                 .error(R.drawable.ic_broken_image)
                 .memoryCachePolicy(CachePolicy.DISABLED)
-//                .diskCacheKey(imgPos.toString())
                 .build()
             imageLoader.enqueue(request)
-//            imageLoader.diskCache?.get(imgUrl.toString())
-//            println("1 " + request.diskCacheKey)
         }
     } else {
         imgUrl.let {
@@ -182,7 +182,6 @@ fun bindImage(imgView: ImageView, imgUrl: CharSequence) {
                 .memoryCachePolicy(CachePolicy.DISABLED)
                 .build()
             imageLoader.enqueue(request)
-//            println("2 " + imgView.result?.request?.diskCacheKey)
         }
     }
 }
@@ -251,20 +250,9 @@ fun bindImagetest(imgView: ImageView, imgUrl: CharSequence, view: View) {
 }
 
 //  https://stackoverflow.com/questions/71308298/how-to-save-image-from-imageview-to-gallery
-//private fun getDisc(): File {
-//    val file = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-//    return File(file, "YOUR_ALBUM_NAME")
-//}
-
 private fun saveImage(drawable: Drawable) {
-//    val file = getDisc()
     val file = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-
-    if (!file.exists() && !file.mkdirs()) {
-        file.mkdir()
-    }
-
-    val simpleDateFormat = SimpleDateFormat("yyyymmsshhmmss")
+    val simpleDateFormat = SimpleDateFormat("yyyyMMddhhmmss")
     val date = simpleDateFormat.format(Date())
     val name = "IMG_$date.jpg"
     val fileName = file.absolutePath + "/" + name
@@ -273,18 +261,108 @@ private fun saveImage(drawable: Drawable) {
     try {
         val draw = drawable as BitmapDrawable
         val bitmap = draw.bitmap
+//      https://stackoverflow.com/questions/68996975/how-can-an-app-write-and-read-file-in-documents-folder
         val fileOutPutStream = FileOutputStream(newFile)
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutPutStream)
-//        Snackbar.make(it,"File saved successfully",Snackbar.LENGTH_LONG).show()
-        println("File saved successfully")
-//        savedFile = newFile
+//        println("File saved successfully")
         fileOutPutStream.flush()
         fileOutPutStream.close()
-
     } catch (e: FileNotFoundException) {
         e.printStackTrace()
     } catch (e: IOException) {
         e.printStackTrace()
     }
+}
 
+//  https://stackoverflow.com/questions/61541856/android-studio-kotlin-save-a-given-image-in-given-path-in-gallery-2020
+private fun Bitmap.saveImage(context: Context): Uri? {
+
+    val simpleDateFormat = SimpleDateFormat("yyyymmsshhmmss")
+    val date = simpleDateFormat.format(Date())
+    val name = "IMG_$date.jpg"
+
+    if (android.os.Build.VERSION.SDK_INT >= 26) {
+        val values = ContentValues()
+        values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+//        values.put(MediaStore.Images.Media.DATE_ADDED, System.currentTimeMillis() / 1000)
+//        values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis())
+        values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures")
+        values.put(MediaStore.Images.Media.IS_PENDING, true)
+//        values.put(MediaStore.Images.Media.DISPLAY_NAME, "img_${SystemClock.uptimeMillis()}")
+        values.put(MediaStore.Images.Media.DISPLAY_NAME, name)
+
+        val uri: Uri? =
+            context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+        if (uri != null) {
+            saveImageToStream(this, context.contentResolver.openOutputStream(uri))
+            values.put(MediaStore.Images.Media.IS_PENDING, false)
+            context.contentResolver.update(uri, values, null, null)
+//            return uri
+        }
+    } else {
+//        val directory =
+//            File(
+//                context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+//                    .toString() + separator + "test_pictures"
+//            )
+//        if (!directory.exists()) {
+//            directory.mkdirs()
+//        }
+
+        val file = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+        if (!file.exists() && !file.mkdirs()) {
+            file.mkdir()
+        }
+
+        val fileName = file.absolutePath + "/" + name
+        val newFile = File(fileName)
+
+//        val fileName = "img_${SystemClock.uptimeMillis()}" + ".jpeg"
+//        val file = File(directory, fileName)
+        saveImageToStream(this, FileOutputStream(newFile))
+        val values = ContentValues()
+        values.put(MediaStore.Images.Media.DATA, file.absolutePath)
+        // .DATA is deprecated in API 29
+        context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+        return Uri.fromFile(file)
+    }
+    return null
+}
+
+
+fun saveImageToStream(bitmap: Bitmap, outputStream: OutputStream?) {
+    if (outputStream != null) {
+        try {
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+            outputStream.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+}
+
+
+//  https://www.youtube.com/watch?v=uRzl07a5VZk
+private fun saveImageToGallery(bitmap: Bitmap, context: Context) {
+    val fos: OutputStream
+
+    try {
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
+            val resolver = context.contentResolver
+            val contentValues = ContentValues()
+            contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME,"image.jpg")
+            contentValues.put(MediaStore.MediaColumns.MIME_TYPE,"image/jpg")
+            contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH,Environment.DIRECTORY_PICTURES)
+            val imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,contentValues)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+//            MediaStore.createWriteRequest(context.contentResolver, imageUri)
+        }
+            fos = resolver.openOutputStream(Objects.requireNonNull(imageUri)!!)!!
+            bitmap.compress(Bitmap.CompressFormat.JPEG,100,fos)
+            Objects.requireNonNull<OutputStream?>(fos)
+//        }
+        println("file saved")
+    } catch (e: java.lang.Exception) {
+        e.printStackTrace()
+    }
 }
