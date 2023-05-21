@@ -1,0 +1,1 @@
+Added capability to save images and fixed issue with multiple loopers
