@@ -38,7 +38,7 @@ class SecondFragment : Fragment() {
 
         binding.buttonSecondTest.setOnClickListener {
             val newURL = binding.editttextSecondUrl.text.toString()
-            bindImagetest(binding.imageCaptureTest, newURL,it)
+            bindImageTest(binding.imageCaptureTest, newURL,it)
         }
 
         binding.buttonSecondSave.setOnClickListener {

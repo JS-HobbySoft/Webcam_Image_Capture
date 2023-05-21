@@ -4,9 +4,6 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Bitmap
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
-import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -36,12 +33,10 @@ import com.google.android.material.snackbar.Snackbar
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
 import java.io.File
-import java.io.FileNotFoundException
 import java.io.FileOutputStream
-import java.io.IOException
-import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 import java.util.Objects
 import java.util.concurrent.ConcurrentHashMap
 
@@ -97,9 +92,7 @@ class CustomAdapter(
                 .setCancelable(false)
                 .setPositiveButton("Yes") { _, _ ->
                     val imageBMP = viewHolder.imageCapture.drawable.toBitmap()
-//                    saveImageToGallery(imageBMP,icContext)
-//                    imageBMP.saveImage(icContext)
-                    saveImage(viewHolder.imageCapture.drawable)
+                    saveImage(imageBMP,icContext,it)
                 }
                 .setNegativeButton("No") { dialog, _ ->
                     // Dismiss the dialog
@@ -204,7 +197,7 @@ private fun buildHttpClient(username: String, password: String): OkHttpClient {
 }
 
 
-fun bindImagetest(imgView: ImageView, imgUrl: CharSequence, view: View) {
+fun bindImageTest(imgView: ImageView, imgUrl: CharSequence, view: View) {
     if (Regex("""https?://(.*?):(.*?)@.*""").containsMatchIn(imgUrl)) {
         val (camUsername, camPassword) = Regex("""https?://(.*?):(.*?)@.*""")
             .find(imgUrl)!!
@@ -250,119 +243,39 @@ fun bindImagetest(imgView: ImageView, imgUrl: CharSequence, view: View) {
 }
 
 //  https://stackoverflow.com/questions/71308298/how-to-save-image-from-imageview-to-gallery
-private fun saveImage(drawable: Drawable) {
+private fun saveImage(bitmap: Bitmap, context: Context,view: View) {
     val file = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-    val simpleDateFormat = SimpleDateFormat("yyyyMMddhhmmss")
+    val simpleDateFormat = SimpleDateFormat("yyyyMMddhhmmss", Locale.US)
     val date = simpleDateFormat.format(Date())
     val name = "IMG_$date.jpg"
     val fileName = file.absolutePath + "/" + name
-    val newFile = File(fileName)
 
     try {
-        val draw = drawable as BitmapDrawable
-        val bitmap = draw.bitmap
-//      https://stackoverflow.com/questions/68996975/how-can-an-app-write-and-read-file-in-documents-folder
-        val fileOutPutStream = FileOutputStream(newFile)
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutPutStream)
-//        println("File saved successfully")
-        fileOutPutStream.flush()
-        fileOutPutStream.close()
-    } catch (e: FileNotFoundException) {
-        e.printStackTrace()
-    } catch (e: IOException) {
-        e.printStackTrace()
-    }
-}
-
-//  https://stackoverflow.com/questions/61541856/android-studio-kotlin-save-a-given-image-in-given-path-in-gallery-2020
-private fun Bitmap.saveImage(context: Context): Uri? {
-
-    val simpleDateFormat = SimpleDateFormat("yyyymmsshhmmss")
-    val date = simpleDateFormat.format(Date())
-    val name = "IMG_$date.jpg"
-
-    if (android.os.Build.VERSION.SDK_INT >= 26) {
-        val values = ContentValues()
-        values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-//        values.put(MediaStore.Images.Media.DATE_ADDED, System.currentTimeMillis() / 1000)
-//        values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis())
-        values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures")
-        values.put(MediaStore.Images.Media.IS_PENDING, true)
-//        values.put(MediaStore.Images.Media.DISPLAY_NAME, "img_${SystemClock.uptimeMillis()}")
-        values.put(MediaStore.Images.Media.DISPLAY_NAME, name)
-
-        val uri: Uri? =
-            context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-        if (uri != null) {
-            saveImageToStream(this, context.contentResolver.openOutputStream(uri))
-            values.put(MediaStore.Images.Media.IS_PENDING, false)
-            context.contentResolver.update(uri, values, null, null)
-//            return uri
-        }
-    } else {
-//        val directory =
-//            File(
-//                context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-//                    .toString() + separator + "test_pictures"
-//            )
-//        if (!directory.exists()) {
-//            directory.mkdirs()
-//        }
-
-        val file = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-        if (!file.exists() && !file.mkdirs()) {
-            file.mkdir()
-        }
-
-        val fileName = file.absolutePath + "/" + name
-        val newFile = File(fileName)
-
-//        val fileName = "img_${SystemClock.uptimeMillis()}" + ".jpeg"
-//        val file = File(directory, fileName)
-        saveImageToStream(this, FileOutputStream(newFile))
-        val values = ContentValues()
-        values.put(MediaStore.Images.Media.DATA, file.absolutePath)
-        // .DATA is deprecated in API 29
-        context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-        return Uri.fromFile(file)
-    }
-    return null
-}
-
-
-fun saveImageToStream(bitmap: Bitmap, outputStream: OutputStream?) {
-    if (outputStream != null) {
-        try {
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-            outputStream.close()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-}
-
-
-//  https://www.youtube.com/watch?v=uRzl07a5VZk
-private fun saveImageToGallery(bitmap: Bitmap, context: Context) {
-    val fos: OutputStream
-
-    try {
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
+//      https://www.youtube.com/watch?v=uRzl07a5VZk
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val resolver = context.contentResolver
             val contentValues = ContentValues()
-            contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME,"image.jpg")
-            contentValues.put(MediaStore.MediaColumns.MIME_TYPE,"image/jpg")
-            contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH,Environment.DIRECTORY_PICTURES)
-            val imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,contentValues)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-//            MediaStore.createWriteRequest(context.contentResolver, imageUri)
+            contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, name)
+            contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "image/jpg")
+            contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+            val imageUri =
+                resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+            val fos = resolver.openOutputStream(Objects.requireNonNull(imageUri)!!)!!
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
+        } else {
+//      https://stackoverflow.com/questions/68996975/how-can-an-app-write-and-read-file-in-documents-folder
+            val newFile = File(fileName)
+            val fileOutPutStream = FileOutputStream(newFile)
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutPutStream)
+            fileOutPutStream.flush()
+            fileOutPutStream.close()
         }
-            fos = resolver.openOutputStream(Objects.requireNonNull(imageUri)!!)!!
-            bitmap.compress(Bitmap.CompressFormat.JPEG,100,fos)
-            Objects.requireNonNull<OutputStream?>(fos)
-//        }
-        println("file saved")
-    } catch (e: java.lang.Exception) {
+        val saveMessage = Snackbar.make(context,view,"File saved successfully: $fileName",Snackbar.LENGTH_LONG)
+        saveMessage.show()
+        println("File saved successfully")
+    } catch (e: Exception) {
         e.printStackTrace()
+        val notSavedMessage = Snackbar.make(context,view,"File not saved: $e",Snackbar.LENGTH_LONG)
+        notSavedMessage.show()
     }
 }
