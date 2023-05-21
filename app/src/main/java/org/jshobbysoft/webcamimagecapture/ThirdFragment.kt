@@ -59,7 +59,7 @@ class ThirdFragment : Fragment() {
 
         binding.buttonThirdTest.setOnClickListener {
             val newURL = binding.editttextThirdUrl.text.toString()
-            bindImagetest(binding.imageCaptureTest, newURL,it)
+            bindImageTest(binding.imageCaptureTest, newURL,it)
         }
 
         binding.buttonThirdSave.setOnClickListener {

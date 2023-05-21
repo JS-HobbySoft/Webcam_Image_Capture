@@ -1,14 +1,19 @@
 package org.jshobbysoft.webcamimagecapture
 
-//import coil.intercept.Interceptor
+import android.content.ContentValues
 import android.content.Context
 import android.content.SharedPreferences
+import android.graphics.Bitmap
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.core.graphics.drawable.toBitmap
 import androidx.core.os.bundleOf
 import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
@@ -27,6 +32,12 @@ import com.burgstaller.okhttp.digest.Credentials as digestCredentials
 import com.google.android.material.snackbar.Snackbar
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
+import java.io.File
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.Objects
 import java.util.concurrent.ConcurrentHashMap
 
 data class ImageViewModel(val nickNameFromPrefs: String, val urlFromPrefs: String)
@@ -73,6 +84,23 @@ class CustomAdapter(
         viewHolder.imageCapture.setOnClickListener { v ->
             val bundle = bundleOf("url" to imageViewModel.urlFromPrefs)
             v.findNavController().navigate(R.id.action_FirstFragment_to_FullScreenFragment, bundle)
+        }
+
+        viewHolder.imageCapture.setOnLongClickListener {
+            val builder = AlertDialog.Builder(icContext)
+            builder.setMessage("Save image?")
+                .setCancelable(false)
+                .setPositiveButton("Yes") { _, _ ->
+                    val imageBMP = viewHolder.imageCapture.drawable.toBitmap()
+                    saveImage(imageBMP,icContext,it)
+                }
+                .setNegativeButton("No") { dialog, _ ->
+                    // Dismiss the dialog
+                    dialog.dismiss()
+                }
+            val alert = builder.create()
+            alert.show()
+            true
         }
 
         viewHolder.itemView.setOnClickListener { v ->
@@ -152,7 +180,7 @@ fun bindImage(imgView: ImageView, imgUrl: CharSequence) {
 }
 
 private fun buildHttpClient(username: String, password: String): OkHttpClient {
-    // Library used for digest authenticaton: https://github.com/rburgst/okhttp-digest
+    // Library used for digest authentication: https://github.com/rburgst/okhttp-digest
     val digestAuthenticator = DigestAuthenticator(digestCredentials(username, password))
     val basicAuthenticator = BasicAuthenticator(digestCredentials(username, password))
     val authenticator = DispatchingAuthenticator.Builder()
@@ -169,7 +197,7 @@ private fun buildHttpClient(username: String, password: String): OkHttpClient {
 }
 
 
-fun bindImagetest(imgView: ImageView, imgUrl: CharSequence, view: View) {
+fun bindImageTest(imgView: ImageView, imgUrl: CharSequence, view: View) {
     if (Regex("""https?://(.*?):(.*?)@.*""").containsMatchIn(imgUrl)) {
         val (camUsername, camPassword) = Regex("""https?://(.*?):(.*?)@.*""")
             .find(imgUrl)!!
@@ -211,5 +239,43 @@ fun bindImagetest(imgView: ImageView, imgUrl: CharSequence, view: View) {
                 .build()
             imageLoader.enqueue(request)
         }
+    }
+}
+
+//  https://stackoverflow.com/questions/71308298/how-to-save-image-from-imageview-to-gallery
+private fun saveImage(bitmap: Bitmap, context: Context,view: View) {
+    val file = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+    val simpleDateFormat = SimpleDateFormat("yyyyMMddhhmmss", Locale.US)
+    val date = simpleDateFormat.format(Date())
+    val name = "IMG_$date.jpg"
+    val fileName = file.absolutePath + "/" + name
+
+    try {
+//      https://www.youtube.com/watch?v=uRzl07a5VZk
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val resolver = context.contentResolver
+            val contentValues = ContentValues()
+            contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, name)
+            contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "image/jpg")
+            contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+            val imageUri =
+                resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+            val fos = resolver.openOutputStream(Objects.requireNonNull(imageUri)!!)!!
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
+        } else {
+//      https://stackoverflow.com/questions/68996975/how-can-an-app-write-and-read-file-in-documents-folder
+            val newFile = File(fileName)
+            val fileOutPutStream = FileOutputStream(newFile)
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutPutStream)
+            fileOutPutStream.flush()
+            fileOutPutStream.close()
+        }
+        val saveMessage = Snackbar.make(context,view,"File saved successfully: $fileName",Snackbar.LENGTH_LONG)
+        saveMessage.show()
+        println("File saved successfully")
+    } catch (e: Exception) {
+        e.printStackTrace()
+        val notSavedMessage = Snackbar.make(context,view,"File not saved: $e",Snackbar.LENGTH_LONG)
+        notSavedMessage.show()
     }
 }

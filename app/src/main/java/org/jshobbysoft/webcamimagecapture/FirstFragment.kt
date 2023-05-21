@@ -70,7 +70,6 @@ class FirstFragment : Fragment() {
                 }
             }
         }, viewLifecycleOwner)
-
         return binding.root
     }
 
@@ -120,6 +119,7 @@ class FirstFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        mainHandler.removeCallbacksAndMessages(null)
         _binding = null
     }
 }
